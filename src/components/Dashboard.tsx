@@ -17,10 +17,10 @@ export function Dashboard() {
           className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center text-3xl font-bold mb-4 ${
             isDark ? "bg-indigo-600" : "bg-indigo-100 text-indigo-600"
           }`}>
-          {user?.name.charAt(0).toUpperCase()}
+          {user?.username.charAt(0).toUpperCase()}
         </div>
-        <h2 className='text-2xl font-bold'>Welcome, {user?.name}!</h2>
-        <p className='text-sm opacity-70 mt-1'>{user?.email}</p>
+        <h2 className='text-2xl font-bold'>Welcome, {user?.username}!</h2>
+        <p className='text-sm opacity-70 mt-1'>{user?.role}</p>
       </div>
 
       <div
@@ -33,10 +33,10 @@ export function Dashboard() {
             <strong>ID:</strong> {user?.id}
           </li>
           <li>
-            <strong>Name:</strong> {user?.name}
+            <strong>Username:</strong> {user?.username}
           </li>
           <li>
-            <strong>Email:</strong> {user?.email}
+            <strong>Role:</strong> {user?.role}
           </li>
         </ul>
       </div>

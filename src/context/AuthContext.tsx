@@ -1,53 +1,84 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState } from "react";
+import type { ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { authApi, setAccessToken } from "../services/api";
 
-// 1. Define the user type and context shape
 interface User {
   id: string;
-  name: string;
-  email: string;
+  username: string;
+  role: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-// 2. Create the context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// 3. Create the Provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
 
-  // Simulated login - in real app, this would call your API
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  const { isLoading } = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: async () => {
+      try {
+        const response = await authApi.me();
+        setUser(response.data.user);
+        return response.data.user;
+      } catch {
+        setUser(null);
+        return null;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
 
-    // Fake validation (in real app, validate with backend)
-    if (email && password.length >= 4) {
-      setUser({
-        id: "1",
-        name: email.split("@")[0], // Extract name from email
-        email: email,
-      });
-      return true;
-    }
-    return false;
+  const login = async (username: string, password: string) => {
+    const response = await authApi.login({ username, password });
+    const { user } = response.data.data;
+    setUser(user);
+    // Invalidate auth query to refetch user data
+    queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
   };
 
-  const logout = () => {
-    setUser(null);
+  const register = async (username: string, password: string) => {
+    const response = await authApi.register({
+      username,
+      password,
+      role: "user",
+    });
+    const { user } = response.data.data;
+    setUser(user);
+    // Invalidate auth query to refetch user data
+    queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+  };
+
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      setAccessToken(null); // Clear token from memory
+      setUser(null);
+      // Clear auth query cache
+      queryClient.removeQueries({ queryKey: ["auth", "me"] });
+    }
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: user !== null,
+        isAuthenticated: !!user,
+        isLoading,
         login,
+        register,
         logout,
       }}>
       {children}
@@ -55,7 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// 4. Custom hook with safety check
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

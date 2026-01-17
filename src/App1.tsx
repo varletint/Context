@@ -1,35 +1,16 @@
-import { useState } from "react";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Header } from "./components/Header";
 import { LoginForm } from "./components/LoginForm";
-import { RegisterForm } from "./components/RegisterForm";
 import { Dashboard } from "./components/Dashboard";
 
-// Main content that switches between Login, Register, and Dashboard
+// Main content that switches between Login and Dashboard
 function MainContent() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [isRegistering, setIsRegistering] = useState(false);
-
-  if (isLoading) {
-    return (
-      <div className='flex items-center justify-center min-h-[50vh]'>
-        <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500'></div>
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    return <Dashboard />;
-  }
+  const { isAuthenticated } = useAuth();
 
   return (
     <main className='flex-1 flex items-center justify-center p-8'>
-      {isRegistering ? (
-        <RegisterForm onToggle={() => setIsRegistering(false)} />
-      ) : (
-        <LoginForm onToggle={() => setIsRegistering(true)} />
-      )}
+      {isAuthenticated ? <Dashboard /> : <LoginForm />}
     </main>
   );
 }
@@ -50,6 +31,7 @@ function AppContent() {
 }
 
 // App wraps everything in BOTH providers
+// Order matters: outer providers are available to inner ones
 export default function App() {
   return (
     <ThemeProvider>
